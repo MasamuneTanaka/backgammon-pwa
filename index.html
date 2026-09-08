@@ -2,18 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>バックギャモン</title>
-
-<!-- PWA / iOSホーム画面対応 -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="バックギャモン">
-<meta name="theme-color" content="#2c1c10">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-192.png">
-
 <style>
   :root{
     --wood-dark:#2c1c10;
@@ -33,7 +23,9 @@
     background:radial-gradient(ellipse at top, #241a12 0%, #0f0a06 70%);
     min-height:100vh;
     display:flex;
+    flex-direction:column;
     justify-content:center;
+    align-items:center;
     font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
     color:var(--ink);
     padding:18px 12px 32px;
@@ -674,17 +666,6 @@ function render(){
 }
 
 initGame();
-</script>
-
-<script>
-  // PWA: Service Workerを登録してオフライン動作に対応
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch((err) => {
-        console.log('SW registration failed:', err);
-      });
-    });
-  }
 </script>
 </body>
 </html>
