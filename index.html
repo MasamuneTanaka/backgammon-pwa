@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>バックギャモン</title>
+
+<!-- PWA / iOSホーム画面対応 -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="バックギャモン">
+<meta name="theme-color" content="#2c1c10">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+  :root{
+    --wood-dark:#2c1c10;
+    --wood:#4a2f1c;
+    --wood-light:#6b452a;
+    --felt:#1e4638;
+    --cream:#ecdfc2;
+    --burgundy:#7c3030;
+    --gold:#d3ab4e;
+    --ivory:#f3ead6;
+    --espresso:#241811;
+    --ink:#efe6d2;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at top, #241a12 0%, #0f0a06 70%);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    color:var(--ink);
+    padding:18px 12px 32px;
+  }
+  #app{width:100%;max-width:640px;}
+  header{text-align:center;margin-bottom:10px;}
+  h1{
+    font-size:26px;
+    letter-spacing:0.04em;
+    margin:0 0 2px;
+    font-weight:600;
+    color:var(--ivory);
+  }
+  header p{
+    margin:0;
+    font-size:12.5px;
+    color:#b8a888;
+    font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+    letter-spacing:0.02em;
+  }
+  #statusBar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:14px 2px 8px;
+    font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+  }
+  #turnLabel{
+    font-size:13px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:3px;
+    background:var(--wood-light);
+    color:var(--ivory);
+    white-space:nowrap;
+  }
+  #status{
+    font-size:13px;
+    color:#d8c9a8;
+    flex:1;
+    text-align:right;
+  }
+  #boardWrap{
+    background:linear-gradient(160deg,var(--wood-light),var(--wood) 55%,var(--wood-dark));
+    padding:14px;
+    border-radius:8px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  svg#board{width:100%;height:auto;display:block;}
+  .diceRow{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    min-height:46px;
+    margin:14px 0 4px;
+  }
+  .die{
+    width:42px;height:42px;
+    display:block;
+    box-shadow:0 3px 6px rgba(0,0,0,0.5);
+    border-radius:7px;
+    flex-shrink:0;
+  }
+  #legend{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    margin:6px 0 0;
+    font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+    font-size:12px;
+    color:#c9b98f;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .chipDot{
+    width:16px;height:16px;
+    border-radius:50%;
+    box-shadow:0 1px 3px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.15);
+    display:inline-block;
+  }
+  .chipDot.you{ background:linear-gradient(160deg,#fdf8ec,#e6d6ac); }
+  .chipDot.ai{ background:linear-gradient(160deg,#3a2c20,#120c07); }
+  #controls{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin-top:6px;
+    font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+  }
+  button{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    padding:10px 22px;
+    border-radius:22px;
+    border:none;
+    cursor:pointer;
+    letter-spacing:0.02em;
+  }
+  #rollBtn{
+    background:linear-gradient(160deg,var(--gold),#a97e2c);
+    color:#2a1c08;
+    box-shadow:0 4px 10px rgba(0,0,0,0.4);
+  }
+  #newGameBtn{
+    background:transparent;
+    color:var(--ivory);
+    border:1px solid rgba(239,230,210,0.4);
+  }
+  #offCounts{
+    text-align:center;
+    margin-top:12px;
+    font-size:12.5px;
+    color:#b8a888;
+    font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
+    letter-spacing:0.02em;
+  }
+  .pt{cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>バックギャモン</h1>
+    <p>AI対戦・広告なし</p>
+  </header>
+
+  <div id="legend">
+    <span class="chip"><span class="chipDot you"></span>あなた(白)</span>
+    <span class="chip"><span class="chipDot ai"></span>AI(黒)</span>
+  </div>
+
+  <div id="statusBar">
+    <div id="turnLabel">-</div>
+    <div id="status">-</div>
+  </div>
+
+  <div id="boardWrap">
+    <svg id="board" viewBox="0 0 1010 560" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="diceRow" id="diceDisplay"></div>
+
+  <div id="controls">
+    <button id="rollBtn" onclick="rollDice()">サイコロを振る</button>
+    <button id="newGameBtn" onclick="initGame()">もう一度</button>
+  </div>
+
+  <div id="offCounts">-</div>
+</div>
+
+<script>
+const MARGIN=20, SLOT=70, ROWH=260, OFFW=60;
+const TOPY0=MARGIN, TOPY1=MARGIN+ROWH, BOTY0=MARGIN+ROWH, BOTY1=MARGIN+ROWH*2;
+
+let board={}, bar={W:0,B:0}, off={W:0,B:0};
+let turn='W', dice=[], originalRoll=[];
+let selected=null, legalForSelected=[];
+let gameOver=false, message='';
+
+function initGame(){
+  board={};
+  for(let i=1;i<=24;i++) board[i]={count:0,owner:null};
+  board[24]={count:2,owner:'W'};
+  board[13]={count:5,owner:'W'};
+  board[8]={count:3,owner:'W'};
+  board[6]={count:5,owner:'W'};
+  board[1]={count:2,owner:'B'};
+  board[12]={count:5,owner:'B'};
+  board[17]={count:3,owner:'B'};
+  board[19]={count:5,owner:'B'};
+  bar={W:0,B:0}; off={W:0,B:0};
+  turn='W'; dice=[]; originalRoll=[];
+  selected=null; legalForSelected=[];
+  gameOver=false;
+  message='サイコロを振ってください';
+  render();
+}
+
+function opponent(o){ return o==='W'?'B':'W'; }
+
+/* ---------- geometry ---------- */
+function slotOf(p){
+  if(p>=13&&p<=24){ const idx=p-13; return idx<6? idx: idx+1; }
+  const idx=12-p; return idx<6? idx: idx+1;
+}
+function rowOf(p){ return p>=13?'top':'bottom'; }
+function colX(p){ return MARGIN+slotOf(p)*SLOT; }
+
+/* ---------- rules ---------- */
+function pointDistance(owner,p){ return owner==='W'? p : 25-p; }
+
+function destinationFor(owner, source, die){
+  if(source==='bar'){ return owner==='W'? 25-die : die; }
+  const raw = owner==='W'? source-die : source+die;
+  if(owner==='W' && raw<1) return 'off';
+  if(owner==='B' && raw>24) return 'off';
+  return raw;
+}
+
+function allOwnerInHome(owner){
+  if(bar[owner]>0) return false;
+  for(let p=1;p<=24;p++){
+    const cell=board[p];
+    if(cell.owner===owner){
+      const inHome = owner==='W'? (p>=1&&p<=6) : (p>=19&&p<=24);
+      if(!inHome) return false;
+    }
+  }
+  return true;
+}
+
+function isLegalMove(owner, source, die){
+  if(bar[owner]>0 && source!=='bar') return false;
+  if(source!=='bar'){
+    const cell=board[source];
+    if(!cell||cell.owner!==owner||cell.count<=0) return false;
+  }
+  const dest=destinationFor(owner, source, die);
+  if(dest==='off'){
+    if(!allOwnerInHome(owner)) return false;
+    const dist=pointDistance(owner, source);
+    if(die===dist) return true;
+    if(die>dist){
+      for(let p=1;p<=24;p++){
+        if(board[p].owner===owner && board[p].count>0){
+          if(pointDistance(owner,p)>dist) return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+  if(dest<1||dest>24) return false;
+  const cell=board[dest];
+  if(cell.owner && cell.owner!==owner && cell.count>=2) return false;
+  return true;
+}
+
+function applyMove(owner, source, die, dest){
+  if(source==='bar'){ bar[owner]--; }
+  else { board[source].count--; if(board[source].count===0) board[source].owner=null; }
+  if(dest==='off'){ off[owner]++; return; }
+  const cell=board[dest];
+  if(cell.owner && cell.owner!==owner && cell.count===1){
+    cell.owner=null; cell.count=0;
+    bar[opponent(owner)]++;
+  }
+  if(!cell.owner || cell.count===0){ cell.owner=owner; cell.count=1; }
+  else { cell.count++; }
+}
+
+function hasAnyLegalMove(owner, diceArr){
+  const uniq=[...new Set(diceArr)];
+  if(bar[owner]>0) return uniq.some(d=>isLegalMove(owner,'bar',d));
+  for(let p=1;p<=24;p++){
+    if(board[p].owner===owner && board[p].count>0){
+      if(uniq.some(d=>isLegalMove(owner,p,d))) return true;
+    }
+  }
+  return false;
+}
+
+/* ---------- turn flow ---------- */
+function rollDice(){
+  if(dice.length>0||gameOver||turn!=='W') return;
+  const d1=1+Math.floor(Math.random()*6), d2=1+Math.floor(Math.random()*6);
+  originalRoll=[d1,d2];
+  dice = d1===d2 ? [d1,d1,d1,d1] : [d1,d2];
+  selected=null; legalForSelected=[];
+  if(!hasAnyLegalMove('W',dice)){
+    message='動かせる駒がありません。ターンを渡します。';
+    render();
+    setTimeout(endTurn,1200);
+    return;
+  }
+  message='駒を選んでください';
+  render();
+}
+
+function endTurn(){
+  dice=[]; originalRoll=[]; selected=null; legalForSelected=[];
+  if(gameOver){ render(); return; }
+  turn=opponent(turn);
+  if(turn==='B'){
+    message='AIの番です';
+    render();
+    setTimeout(rollDiceAI,600);
+  } else {
+    message='サイコロを振ってください';
+    render();
+  }
+}
+
+function cloneBoard(b){
+  const nb={};
+  for(let p=1;p<=24;p++) nb[p]={count:b[p].count, owner:b[p].owner};
+  return nb;
+}
+
+function getLegalMovesAt(owner, diceUnique){
+  const moves=[];
+  if(bar[owner]>0){
+    diceUnique.forEach(d=>{ if(isLegalMove(owner,'bar',d)) moves.push({source:'bar',die:d,dest:destinationFor(owner,'bar',d)}); });
+    return moves;
+  }
+  for(let p=1;p<=24;p++){
+    if(board[p].owner===owner && board[p].count>0){
+      diceUnique.forEach(d=>{ if(isLegalMove(owner,p,d)) moves.push({source:p,die:d,dest:destinationFor(owner,p,d)}); });
+    }
+  }
+  return moves;
+}
+
+function quickScore(m){
+  let score=0;
+  if(m.dest==='off') score+=1000;
+  else {
+    const cell=board[m.dest];
+    if(cell.owner==='W' && cell.count===1) score+=500;
+    if(cell.owner==='B' && cell.count>=1) score+=90;
+  }
+  if(m.source==='bar') score+=250;
+  score += m.die*2;
+  return score + Math.random()*6;
+}
+
+/* Position evaluation from the given owner's point of view: higher = better for owner. */
+function evaluate(owner){
+  const opp=opponent(owner);
+  let pipOwner=0, pipOpp=0, blotPenalty=0, pointBonus=0;
+  for(let p=1;p<=24;p++){
+    const cell=board[p];
+    if(!cell||cell.count<=0) continue;
+    if(cell.owner===owner){
+      pipOwner += cell.count*pointDistance(owner,p);
+      const inHome = owner==='W' ? (p>=1&&p<=6) : (p>=19&&p<=24);
+      if(cell.count===1) blotPenalty += inHome? 12 : 38;
+      else pointBonus += inHome? 26 : 9;
+    } else if(cell.owner===opp){
+      pipOpp += cell.count*pointDistance(opp,p);
+    }
+  }
+  pipOwner += bar[owner]*25;
+  pipOpp += bar[opp]*25;
+  let score = (pipOpp-pipOwner)*2;
+  score += off[owner]*150 - off[opp]*150;
+  score += pointBonus - blotPenalty;
+  score += bar[opp]*70 - bar[owner]*70;
+  return score;
+}
+
+const AI_BEAM=6;
+
+function planAIMoves(){
+  const owner='B';
+  const REAL_board=board, REAL_bar=bar, REAL_off=off;
+  const results=[];
+
+  function dfs(remaining, movesSoFar, curBoard, curBar, curOff){
+    board=curBoard; bar=curBar; off=curOff;
+    const uniq=[...new Set(remaining)];
+    const legal=getLegalMovesAt(owner, uniq);
+    if(legal.length===0){
+      results.push({usedCount:movesSoFar.length, score:evaluate(owner), moves:movesSoFar});
+      return;
+    }
+    const cands=legal
+      .map(m=>({m, quick:quickScore(m)}))
+      .sort((a,b)=>b.quick-a.quick)
+      .slice(0,AI_BEAM);
+    cands.forEach(({m})=>{
+      const nb=cloneBoard(curBoard), nbar={...curBar}, noff={...curOff};
+      board=nb; bar=nbar; off=noff;
+      applyMove(owner, m.source, m.die, m.dest);
+      const rem=[...remaining];
+      rem.splice(rem.indexOf(m.die),1);
+      dfs(rem, [...movesSoFar, m], nb, nbar, noff);
+    });
+  }
+
+  dfs([...dice], [], cloneBoard(REAL_board), {...REAL_bar}, {...REAL_off});
+  board=REAL_board; bar=REAL_bar; off=REAL_off;
+
+  if(results.length===0) return [];
+  const maxUsed=Math.max(...results.map(r=>r.usedCount));
+  const finalists=results.filter(r=>r.usedCount===maxUsed);
+  finalists.sort((a,b)=>b.score-a.score);
+  return finalists[0].moves;
+}
+
+function rollDiceAI(){
+  const d1=1+Math.floor(Math.random()*6), d2=1+Math.floor(Math.random()*6);
+  originalRoll=[d1,d2];
+  dice = d1===d2 ? [d1,d1,d1,d1] : [d1,d2];
+  render();
+  setTimeout(aiPlay,600);
+}
+
+function aiPlay(){
+  if(gameOver) return;
+  const moves=planAIMoves();
+  if(moves.length===0){
+    message='AIは動かせません';
+    render();
+    setTimeout(endTurn,900);
+    return;
+  }
+  aiStepMoves(moves,0);
+}
+
+function aiStepMoves(moves,i){
+  if(i>=moves.length){
+    setTimeout(endTurn,600);
+    return;
+  }
+  const m=moves[i];
+  applyMove('B', m.source, m.die, m.dest);
+  const idx=dice.indexOf(m.die); if(idx>=0) dice.splice(idx,1);
+  message='AIが移動しました';
+  render();
+  if(off.B===15){ gameOver=true; message='AIの勝ちです'; render(); return; }
+  setTimeout(()=>aiStepMoves(moves,i+1), 650);
+}
+
+/* ---------- human interaction ---------- */
+function clearSelection(){ selected=null; legalForSelected=[]; render(); }
+
+function isSourceMovable(source){
+  if(gameOver||turn!=='W'||dice.length===0) return false;
+  if(bar.W>0) return source==='bar';
+  if(source==='bar') return false;
+  const cell=board[source];
+  if(!cell||cell.owner!=='W'||cell.count<=0) return false;
+  const uniq=[...new Set(dice)];
+  return uniq.some(d=>isLegalMove('W',source,d));
+}
+
+function selectSource(source){
+  const uniq=[...new Set(dice)];
+  const moves=[];
+  uniq.forEach(d=>{ if(isLegalMove('W',source,d)) moves.push({die:d,dest:destinationFor('W',source,d)}); });
+  if(moves.length===0){ message='その駒は動かせません'; selected=null; legalForSelected=[]; render(); return; }
+  selected=source; legalForSelected=moves; message='移動先を選んでください';
+  render();
+}
+
+function handlePointClick(p){
+  if(gameOver||turn!=='W'||dice.length===0) return;
+  if(selected!==null){
+    const found=legalForSelected.find(m=>m.dest===p);
+    if(found){ doMove('W',selected,found.die,p); return; }
+  }
+  if(bar.W>0){ message='先にバーの駒を入れてください'; render(); return; }
+  const cell=board[p];
+  if(!cell||cell.owner!=='W'||cell.count<=0){ selected=null; legalForSelected=[]; render(); return; }
+  selectSource(p);
+}
+
+function handleBarClick(){
+  if(gameOver||turn!=='W'||dice.length===0) return;
+  if(bar.W<=0) return;
+  selectSource('bar');
+}
+
+function handleOffClick(){
+  if(gameOver||turn!=='W'||dice.length===0||selected===null) return;
+  const found=legalForSelected.find(m=>m.dest==='off');
+  if(found){ doMove('W',selected,found.die,'off'); }
+}
+
+function doMove(owner, source, die, dest){
+  applyMove(owner, source, die, dest);
+  const idx=dice.indexOf(die); dice.splice(idx,1);
+  selected=null; legalForSelected=[];
+  if(off[owner]===15){ gameOver=true; message='あなたの勝ちです!'; render(); return; }
+  if(dice.length===0){
+    message='';
+    render();
+    setTimeout(endTurn,300);
+  } else if(!hasAnyLegalMove('W',dice)){
+    message='動かせる駒がありません';
+    render();
+    setTimeout(endTurn,900);
+  } else {
+    message='続けて駒を選んでください';
+    render();
+  }
+}
+
+/* ---------- rendering ---------- */
+const PIP_LAYOUT={
+  1:[4],
+  2:[0,8],
+  3:[0,4,8],
+  4:[0,2,6,8],
+  5:[0,2,4,6,8],
+  6:[0,2,3,5,6,8]
+};
+function dieFaceSVG(n){
+  const cells=PIP_LAYOUT[n]||[];
+  const positions=[9,21,33,9,21,33,9,21,33].map((v,i)=>({x:[9,21,33,9,21,33,9,21,33][i], y:[9,9,9,21,21,21,33,33,33][i]}));
+  let pips='';
+  cells.forEach(i=>{
+    const pos=positions[i];
+    pips+=`<circle cx="${pos.x}" cy="${pos.y}" r="3.6" fill="#241811"/>`;
+  });
+  return `<svg class="die" width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.5" y="1.5" width="39" height="39" rx="7" fill="#f8f1de" stroke="#00000030" stroke-width="1"/>
+    ${pips}
+  </svg>`;
+}
+function diceHTML(){
+  if(dice.length===0) return '';
+  return dice.map(d=>dieFaceSVG(d)).join('');
+}
+
+function checkerCircle(cx,cy,r,owner,label){
+  const fill = owner==='W'? 'url(#gradW)' : 'url(#gradB)';
+  const stroke = owner==='W'? '#8a6a3a' : '#0a0603';
+  let s = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+  if(label!==undefined){
+    const txtColor = owner==='W' ? '#3a2a12' : '#e9d9a8';
+    s += `<text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="15" font-weight="700" fill="${txtColor}" font-family="Georgia,serif">${label}</text>`;
+  }
+  return s;
+}
+
+function stackCheckers(p){
+  const cell=board[p];
+  if(!cell||cell.count<=0) return '';
+  const x=colX(p)+SLOT/2;
+  const top=rowOf(p)==='top';
+  const maxShow=5;
+  const shown=Math.min(cell.count,maxShow);
+  let s='';
+  for(let i=0;i<shown;i++){
+    const y = top ? (TOPY0+27+i*38) : (BOTY1-27-i*38);
+    const isLast = (i===shown-1) && cell.count>maxShow;
+    s += checkerCircle(x,y,20,cell.owner, isLast? cell.count : undefined);
+  }
+  return s;
+}
+
+function triangle(p){
+  const x=colX(p);
+  const isTop = rowOf(p)==='top';
+  const pts = isTop
+    ? `${x},${TOPY0} ${x+SLOT},${TOPY0} ${x+SLOT/2},${TOPY1}`
+    : `${x},${BOTY1} ${x+SLOT},${BOTY1} ${x+SLOT/2},${BOTY0}`;
+  const color = slotOf(p)%2===0 ? 'var(--cream)' : 'var(--burgundy)';
+  const isSel = selected===p;
+  const isDest = legalForSelected.some(m=>m.dest===p);
+  const isMovable = selected===null && isSourceMovable(p);
+  let strokeAttr='';
+  if(isSel) strokeAttr='stroke="#d3ab4e" stroke-width="3"';
+  else if(isMovable) strokeAttr='stroke="#8fd3a0" stroke-width="2.5"';
+  let s = `<g class="pt" onclick="handlePointClick(${p})">`;
+  s += `<rect x="${x}" y="${isTop?TOPY0:BOTY0}" width="${SLOT}" height="${ROWH}" fill="transparent"/>`;
+  s += `<polygon points="${pts}" fill="${color}" opacity="0.92" ${strokeAttr}/>`;
+  if(isDest){
+    const my = isTop ? TOPY0+ROWH*0.42 : BOTY1-ROWH*0.42;
+    s += `<circle cx="${x+SLOT/2}" cy="${my}" r="13" fill="#d3ab4e" opacity="0.85"/>`;
+  }
+  s += stackCheckers(p);
+  if(isMovable){
+    const cx=x+SLOT/2;
+    const cy = isTop ? TOPY0+27 : BOTY1-27;
+    s += `<circle cx="${cx}" cy="${cy}" r="22" fill="none" stroke="#8fd3a0" stroke-width="2.5" opacity="0.9" pointer-events="none"/>`;
+  }
+  s += `</g>`;
+  return s;
+}
+
+function barHTML(){
+  const x=MARGIN+6*SLOT;
+  let s = `<g onclick="handleBarClick()">`;
+  s += `<rect x="${x}" y="${MARGIN}" width="${SLOT}" height="${ROWH*2}" fill="#1a1109"/>`;
+  s += `<rect x="${x+SLOT/2-3}" y="${MARGIN+6}" width="6" height="${ROWH*2-12}" fill="#000" opacity="0.35"/>`;
+  const cx=x+SLOT/2;
+  for(let i=0;i<Math.min(bar.B,5);i++){
+    s += checkerCircle(cx, TOPY0+27+i*38, 20, 'B', (i===4&&bar.B>5)?bar.B:undefined);
+  }
+  for(let i=0;i<Math.min(bar.W,5);i++){
+    s += checkerCircle(cx, BOTY1-27-i*38, 20, 'W', (i===4&&bar.W>5)?bar.W:undefined);
+  }
+  if(bar.W>0 && isSourceMovable('bar')){
+    s += `<circle cx="${cx}" cy="${BOTY1-27}" r="22" fill="none" stroke="#8fd3a0" stroke-width="2.5" opacity="0.9" pointer-events="none"/>`;
+  }
+  s += `</g>`;
+  return s;
+}
+
+function offHTML(){
+  const x=MARGIN+13*SLOT;
+  const destOff = legalForSelected.some(m=>m.dest==='off');
+  let s = `<g onclick="handleOffClick()">`;
+  s += `<rect x="${x}" y="${MARGIN}" width="${OFFW}" height="${ROWH}" fill="#150d07" ${destOff&&turn==='W'?'stroke="#d3ab4e" stroke-width="2"':''}/>`;
+  s += `<rect x="${x}" y="${MARGIN+ROWH}" width="${OFFW}" height="${ROWH}" fill="#1c130b" ${destOff&&turn==='W'?'stroke="#d3ab4e" stroke-width="2"':''}/>`;
+  s += `<text x="${x+OFFW/2}" y="${MARGIN+22}" text-anchor="middle" font-size="11" fill="#c9b98f" font-family="Georgia,serif">AI</text>`;
+  s += `<text x="${x+OFFW/2}" y="${MARGIN+ROWH-10}" text-anchor="middle" font-size="20" fill="#e9d9a8" font-weight="700" font-family="Georgia,serif">${off.B}</text>`;
+  s += `<text x="${x+OFFW/2}" y="${MARGIN+ROWH+22}" text-anchor="middle" font-size="11" fill="#c9b98f" font-family="Georgia,serif">あなた</text>`;
+  s += `<text x="${x+OFFW/2}" y="${MARGIN+ROWH*2-10}" text-anchor="middle" font-size="20" fill="#f3ead6" font-weight="700" font-family="Georgia,serif">${off.W}</text>`;
+  s += `</g>`;
+  return s;
+}
+
+function render(){
+  document.getElementById('status').textContent = message;
+  document.getElementById('turnLabel').textContent = gameOver ? '終了' : (turn==='W' ? 'あなたの番' : 'AIの番');
+  document.getElementById('offCounts').textContent = `ベアオフ  あなた ${off.W}/15　　AI ${off.B}/15`;
+  document.getElementById('diceDisplay').innerHTML = diceHTML();
+  document.getElementById('rollBtn').style.display = (turn==='W' && dice.length===0 && !gameOver) ? 'inline-block' : 'none';
+  document.getElementById('newGameBtn').style.display = gameOver ? 'inline-block' : 'none';
+
+  let s = `<defs>
+    <linearGradient id="gradW" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fdf8ec"/><stop offset="100%" stop-color="#e6d6ac"/>
+    </linearGradient>
+    <linearGradient id="gradB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a2c20"/><stop offset="100%" stop-color="#120c07"/>
+    </linearGradient>
+  </defs>`;
+  s += `<rect x="0" y="0" width="1010" height="560" fill="#3a2415" onclick="clearSelection()"/>`;
+  s += `<rect x="${MARGIN}" y="${MARGIN}" width="${13*SLOT}" height="${ROWH*2}" fill="var(--felt)" onclick="clearSelection()"/>`;
+  s += `<rect x="${MARGIN}" y="${MARGIN+ROWH-1}" width="${13*SLOT}" height="2" fill="#0f2b21"/>`;
+  for(let p=1;p<=24;p++) s += triangle(p);
+  s += barHTML();
+  s += offHTML();
+  document.getElementById('board').innerHTML = s;
+}
+
+initGame();
+</script>
+
+<script>
+  // PWA: Service Workerを登録してオフライン動作に対応
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((err) => {
+        console.log('SW registration failed:', err);
+      });
+    });
+  }
+</script>
+</body>
+</html>
