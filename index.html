@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>バックギャモン</title>
 <style>
   :root{
@@ -151,6 +151,48 @@
     letter-spacing:0.02em;
   }
   .pt{cursor:pointer;}
+
+  @media (orientation:landscape) and (max-height:520px){
+    body{
+      padding:8px 10px;
+      align-items:stretch;
+      justify-content:flex-start;
+      min-height:100dvh;
+    }
+    #app{
+      flex:1;
+      max-width:100%;
+      display:grid;
+      min-height:0;
+      grid-template-columns:minmax(0,1fr) 190px;
+      grid-template-rows:auto auto auto auto auto 1fr;
+      grid-template-areas:
+        "board header"
+        "board legend"
+        "board status"
+        "board dice"
+        "board controls"
+        "board offcounts";
+      align-items:start;
+      column-gap:16px;
+      row-gap:4px;
+    }
+    header{grid-area:header; margin-bottom:0; text-align:left;}
+    h1{font-size:17px;}
+    header p{display:none;}
+    #legend{grid-area:legend; justify-content:flex-start; gap:10px; margin:0; font-size:10px;}
+    .chipDot{width:12px;height:12px;}
+    #statusBar{grid-area:status; margin:0; flex-direction:column; align-items:flex-start; gap:3px;}
+    #turnLabel{font-size:11px; padding:3px 8px;}
+    #status{font-size:11px; text-align:left;}
+    #boardWrap{grid-area:board; padding:8px; height:100%; min-height:0; display:flex; align-items:center; justify-content:center;}
+    svg#board{width:auto; height:100%; max-height:calc(100dvh - 32px); display:block;}
+    .diceRow{grid-area:dice; justify-content:flex-start; margin:2px 0; min-height:auto;}
+    .die{width:30px; height:30px;}
+    #controls{grid-area:controls; justify-content:flex-start; gap:8px; margin-top:2px;}
+    button{padding:7px 14px; font-size:12.5px;}
+    #offCounts{grid-area:offcounts; margin-top:4px; font-size:10.5px; text-align:left;}
+  }
 </style>
 </head>
 <body>
@@ -668,4 +710,5 @@ function render(){
 initGame();
 </script>
 </body>
+</html>
 </html>
